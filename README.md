@@ -2,6 +2,8 @@
 
 An interactive analytics web dashboard that monitors, analyzes, and visualizes U.S. Postal Service (USPS) delivery reliability, network health metrics, and acute operational disruptions across all 50 states and postal districts.
 
+![USPS Pulse Dashboard](screenshot.png)
+
 ---
 
 ## 📌 Identified Public Data Sources
