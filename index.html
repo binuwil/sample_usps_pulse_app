@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USPS Pulse | National Delivery Health & Disruption Monitor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📬</text></svg>">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand-wrapper">
+        <div class="brand-icon">
+          <!-- Postal Eagle / Envelope Icon -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <h1>
+            USPS Pulse 
+            <span class="brand-badge">PSRA 2022 Monitor</span>
+            <span id="selectedDistrictBadge" class="brand-badge" style="display: none; background: rgba(16,185,129,0.15); color: #10b981; border-color: rgba(16,185,129,0.3);"></span>
+          </h1>
+          <p>National Delivery Reliability, Facility Transitions & Disruption Analytics</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="openIngestModalBtn" class="btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Ingest Bulk CSV
+        </button>
+        <button id="exportCsvBtn" class="btn btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Export View
+        </button>
+      </div>
+    </header>
+
+    <!-- Controls & Timeline Panel -->
+    <section class="controls-panel">
+      <div class="filter-row">
+        <!-- Area Filter -->
+        <div class="filter-group">
+          <label for="areaFilter">Postal Area:</label>
+          <select id="areaFilter" class="filter-select">
+            <option value="ALL">All Areas (National)</option>
+          </select>
+        </div>
+
+        <!-- Mail Class Filter -->
+        <div class="filter-group">
+          <label for="classFilter">Mail Class:</label>
+          <select id="classFilter" class="filter-select">
+            <option value="ALL">All Mail Classes</option>
+          </select>
+        </div>
+
+        <!-- Reset Button -->
+        <button id="resetFiltersBtn" class="btn btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          Reset Filters
+        </button>
+      </div>
+
+      <!-- Timeline Scrubber -->
+      <div class="timeline-scrubber">
+        <button id="playTimelineBtn" class="play-btn" title="Play / Pause Timeline Animation">▶</button>
+        <div class="timeline-track-wrapper">
+          <div class="timeline-info">
+            <span id="currentWeekLabel" class="current-week-badge">Week 1 (June 01 - June 07)</span>
+            <span>Postal Service Performance Cadence: Weekly</span>
+          </div>
+          <input type="range" id="timelineSlider" class="timeline-slider" min="1" max="12" value="1" step="1">
+        </div>
+      </div>
+    </section>
+
+    <!-- Top KPI Health Bar -->
+    <section class="kpi-grid">
+      <!-- KPI 1: Composite On-Time % -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">On-Time Delivery Rate</span>
+          <span class="kpi-icon" style="background: rgba(37,99,235,0.15); color: #60a5fa;">⏱️</span>
+        </div>
+        <div class="kpi-value-row">
+          <span id="kpiOnTime" class="kpi-value">--%</span>
+          <span id="kpiDelta" class="kpi-delta delta-up">+0.0% WoW</span>
+        </div>
+        <div class="kpi-subtext">Statutory Benchmark: <b>95.0%</b></div>
+        <div class="progress-bar-bg">
+          <div id="kpiOnTimeBar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- KPI 2: Active Disruptions -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Critical Disruptions</span>
+          <span class="kpi-icon" style="background: rgba(239,68,68,0.15); color: #ef4444;">⚠️</span>
+        </div>
+        <div class="kpi-value-row">
+          <span id="kpiDisruptions" class="kpi-value">0</span>
+          <span class="kpi-subtext" style="align-self: center;">Hotspot Districts</span>
+        </div>
+        <div class="kpi-subtext">Districts with on-time &lt; 88% or severe delays</div>
+      </div>
+
+      <!-- KPI 3: Sampled Volume -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Sampled Volume</span>
+          <span class="kpi-icon" style="background: rgba(16,185,129,0.15); color: #10b981;">📦</span>
+        </div>
+        <div class="kpi-value-row">
+          <span id="kpiVolume" class="kpi-value">--M</span>
+          <span class="kpi-subtext" style="align-self: center;">Tracked Pieces</span>
+        </div>
+        <div class="kpi-subtext">SPM measurement sample size</div>
+      </div>
+
+      <!-- KPI 4: Avg Transit Velocity -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Average Transit Velocity</span>
+          <span class="kpi-icon" style="background: rgba(139,92,246,0.15); color: #a78bfa;">🚚</span>
+        </div>
+        <div class="kpi-value-row">
+          <span id="kpiDays" class="kpi-value">--d</span>
+          <span class="kpi-subtext" style="align-self: center;">Days to Delivery</span>
+        </div>
+        <div class="kpi-subtext">From first processing scan to final delivery</div>
+      </div>
+    </section>
+
+    <!-- Main Dashboard Grid (Map & Disruption Radar) -->
+    <section class="dashboard-main-grid">
+      
+      <!-- Left: Interactive Map -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+              Geographic Service Health Heatmap
+            </h2>
+            <p class="panel-subtitle">Click any state or district to inspect localized bottlenecks</p>
+          </div>
+          <div class="map-view-toggle">
+            <button id="btnViewGrid" class="toggle-btn active">State Grid</button>
+            <button id="btnViewGeo" class="toggle-btn">Regional Map</button>
+          </div>
+        </div>
+
+        <div class="map-viewport">
+          <div id="mapContainer" style="width: 100%; height: 100%;"></div>
+          <div id="mapTooltip" class="map-tooltip"></div>
+        </div>
+
+        <div class="map-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background: var(--color-healthy);"></div>
+            <span>Healthy (&ge; 93.0%)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: var(--color-warning);"></div>
+            <span>Watch / Elevated Risk (88.0% - 92.9%)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: var(--color-critical);"></div>
+            <span>Critical Disruption (&lt; 88.0%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Disruption Radar -->
+      <div class="panel-card disruption-radar-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              Disruption Radar
+            </h2>
+            <p class="panel-subtitle">Detected facility delays & network anomalies</p>
+          </div>
+        </div>
+
+        <div id="disruptionList" class="disruption-list">
+          <!-- Populated dynamically by AnomalyEngine -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Deep-Dive Analytics Tabs -->
+    <section class="analytics-section">
+      <nav class="tabs-nav">
+        <button class="tab-btn active" data-tab="trajectory">
+          📈 12-Week Trajectory vs 95% Standard
+        </button>
+        <button class="tab-btn" data-tab="classes">
+          📊 Mail Class Breakdown
+        </button>
+        <button class="tab-btn" data-tab="rankings">
+          🏆 Top & Bottom District Benchmarks
+        </button>
+        <button class="tab-btn" data-tab="table">
+          📑 All District Records & Search
+        </button>
+      </nav>
+
+      <!-- Tab 1: Time-Series Trajectory -->
+      <div id="tabContent-trajectory" class="tab-content active">
+        <div id="trajectoryChartContainer" class="chart-container"></div>
+        <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+          <span><span style="color: #3b82f6; font-weight: bold;">―</span> Selected Filter Trajectory</span>
+          <span><span style="color: #94a3b8; font-weight: bold;">--</span> National Average Baseline</span>
+          <span><span style="color: #f59e0b; font-weight: bold;">--</span> 95.0% Statutory Target</span>
+        </div>
+      </div>
+
+      <!-- Tab 2: Mail Class Matrix -->
+      <div id="tabContent-classes" class="tab-content">
+        <div id="classChartContainer" class="chart-container" style="height: 280px;"></div>
+        <div style="text-align: center; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem;">
+          Dotted vertical lines indicate individual statutory service standard targets per mail class.
+        </div>
+      </div>
+
+      <!-- Tab 3: District Rankings -->
+      <div id="tabContent-rankings" class="tab-content">
+        <div id="rankingsContainer"></div>
+      </div>
+
+      <!-- Tab 4: Full Table -->
+      <div id="tabContent-table" class="tab-content">
+        <div style="margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+          <input type="text" id="tableSearchInput" placeholder="Filter districts, states, reasons..." style="background: #1f2937; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 300px;">
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Click any row to filter dashboard</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>State</th>
+                <th>State Name</th>
+                <th>District</th>
+                <th>Area</th>
+                <th>On-Time %</th>
+                <th>Avg Transit</th>
+                <th>Sampled Volume</th>
+                <th>Health Status</th>
+                <th>Operational Notes</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Ingestion Modal -->
+    <div id="ingestModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 style="font-size: 1.1rem; font-weight: 600;">Ingest Official USPS / PRC Data</h3>
+          <button id="closeIngestModalBtn" class="modal-close">&times;</button>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          You can feed real, official bulk CSV files directly into USPS Pulse. The app will parse, re-index, and visualize the data in real-time without uploading to any remote server.
+        </p>
+
+        <div class="dropzone" id="csvDropzone">
+          <div class="dropzone-icon">📂</div>
+          <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem;">Drag and drop your USPS CSV file here</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">or click to browse your computer</div>
+          <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.9rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+          <b style="color: #fff;">Where to download fresh data:</b>
+          <ul style="margin-left: 1.25rem; margin-top: 0.35rem;">
+            <li><b>USPS Official:</b> Go to <a href="https://about.usps.com/what/performance/service-performance/" target="_blank" style="color: var(--usps-blue-light);">USPS Service Performance Dashboard</a> and click <i>"Download Source Data"</i>.</li>
+            <li><b>PRC Reports:</b> Visit <a href="https://www.prc.gov/prc-reports" target="_blank" style="color: var(--usps-blue-light);">PRC eDockets & Reports</a> for Annual Compliance Reports (ACR) and Billing Determinants.</li>
+            <li><b>Sample File:</b> You can also inspect our bundled <a href="data/usps_psra_sample.csv" download style="color: var(--usps-blue-light);">usps_psra_sample.csv</a> to see the required schema.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div>
+        <span>USPS Pulse v1.0 • Built with open federal data compliant with 39 U.S.C. § 3652 & PSRA 2022</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://about.usps.com/what/performance/service-performance/" target="_blank">USPS Service Performance</a>
+        <a href="https://www.prc.gov" target="_blank">Postal Regulatory Commission</a>
+        <a href="https://www.uspsoig.gov" target="_blank">USPS OIG</a>
+        <a href="https://www.huduser.gov/portal/datasets/usps_crosswalk.html" target="_blank">HUD-USPS Crosswalk</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
